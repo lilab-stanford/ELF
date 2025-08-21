@@ -25,7 +25,7 @@
 
 
 ## Step 1: Patch-level embedding extraction
-* Extracting patch-level embedding using [CLAM](https://github.com/mahmoodlab/CLAM) and five tile-level foundation models ([UNI](https://huggingface.co/MahmoodLab/UNI),[CONCHV1.5](https://huggingface.co/MahmoodLab/conchv1_5), [Gigapath](https://huggingface.co/prov-gigapath/prov-gigapath), [Virchow2](https://huggingface.co/paige-ai/Virchow2), [H-optimus-0](https://huggingface.co/bioptimus/H-optimus-0)) in 10X.  
+* Extracting patch-level embedding using [CLAM](https://github.com/mahmoodlab/CLAM) and five tile-level foundation models ([UNI](https://huggingface.co/MahmoodLab/UNI), [CONCHV1.5](https://huggingface.co/MahmoodLab/conchv1_5), [Gigapath](https://huggingface.co/prov-gigapath/prov-gigapath), [Virchow2](https://huggingface.co/paige-ai/Virchow2), [H-optimus-0](https://huggingface.co/bioptimus/H-optimus-0)) in 10X.  
 
 ## Step 2: Slide encoder pretrain 
 * Start training slide encoder using `sh bash_multiple.sh`, at least 8 x NVIDIA H100 needed. Logs and checkpoints will be saved to the default path.
@@ -34,7 +34,8 @@
 ## Step 3: Slide-level embedding extraction
 * Patch-level embedding extraction following Step 1.
 * Slide-level embedding extraction using `extract_multiple_model.sh` after setting the parameters successfully.
-* Evaluate on the downstream tasks like the two examples on the `evaluation`. Please download and uncompress the slide embeddings of all comparison methods for evaluation, [ebrains](https://drive.google.com/file/d/1a38j_ABrHjO6uWNpgy0JakwvZbxxm7cI/view?usp=sharing) and [BRACS](https://drive.google.com/file/d/1YoCp02xr0FGfdsY58_JdNLcalFu17sfK/view?usp=sharing).
+* Evaluation on the downstream tasks, like the two examples in the `evaluation` folder. Please download and uncompress the slide embeddings of all comparison methods (Prov-GigaPath, CHIEF, TITAN and ELF) for evaluation, [ebrains](https://drive.google.com/file/d/1a38j_ABrHjO6uWNpgy0JakwvZbxxm7cI/view?usp=sharing) and [BRACS](https://drive.google.com/file/d/1YoCp02xr0FGfdsY58_JdNLcalFu17sfK/view?usp=sharing).
+* More evaluation examples will be updated, please keep tuned.
 
 
 
