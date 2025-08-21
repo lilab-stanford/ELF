@@ -19,7 +19,7 @@
 * Gigapath (https://huggingface.co/prov-gigapath/prov-gigapath)
 * Virchow2 (https://huggingface.co/paige-ai/Virchow2)
 * H-optimus-0 (https://huggingface.co/bioptimus/H-optimus-0)
-* CHIEF (https: //github.com/hms-dbmi/CHIEF)
+* CHIEF (https://github.com/hms-dbmi/CHIEF)
 * Prov-GigaPath (https://huggingface.co/prov-gigapath/prov-gigapath)
 * TITAN (https://huggingface.co/MahmoodLab/TITAN)
 
