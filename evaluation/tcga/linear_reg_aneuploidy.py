@@ -282,10 +282,13 @@ def evaluate_regression(train_df, val_df, test_df, model_names, model_type="rf")
     model_type_suffix = "xgb" if model_type.lower() in ["xgb", "xgboost"] else "rf"
 
     # Save slide-level results
+    base_path = os.path.join(os.getcwd(), "aneuploidy_reg")
+    os.makedirs(base_path, exist_ok=True)
+    
     all_results_slide = pd.concat([val_results, test_results], ignore_index=True)
     output_file_slide = (f"aneuploidy_predictions_{model_name_str}_{model_type_suffix}"
                         f"_auc_optimized_slide_level.csv")
-    all_results_slide.to_csv(output_file_slide, index=False)
+    all_results_slide.to_csv(os.path.join(base_path, output_file_slide), index=False)
 
     # Save patient-level aggregated results
     val_patient_agg['Split'] = 'validation'
@@ -294,7 +297,7 @@ def evaluate_regression(train_df, val_df, test_df, model_names, model_type="rf")
                                    ignore_index=True)
     output_file_patient = (f"aneuploidy_predictions_{model_name_str}_{model_type_suffix}"
                           f"_auc_optimized_patient_level.csv")
-    base_path = os.path.join(os.getcwd(), "aneuploidy_reg")
+
     all_results_patient.to_csv(os.path.join(base_path, output_file_patient), index=False)
 
     print(f"\nPrediction results saved:")

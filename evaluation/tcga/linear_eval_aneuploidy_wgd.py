@@ -216,17 +216,20 @@ def evaluate_aneuploidy(train_data, val_data, test_data, max_iter=2000, model_na
     print(f"Validation set: {len(val_results)} slides -> {len(val_patient_agg)} patients")
     print(f"Test set: {len(test_results)} slides -> {len(test_patient_agg)} patients")
 
+    base_path = os.path.join(os.getcwd(), "wgd_cls")
+    os.makedirs(base_path, exist_ok=True)
+
     # Save slide-level results
     all_results_slide = pd.concat([val_results, test_results], ignore_index=True)
     output_file_slide = f"wgd_predictions_{model_name}_lg_auc_optimized_slide_level.csv"
-    all_results_slide.to_csv(output_file_slide, index=False)
+    all_results_slide.to_csv(os.path.join(base_path, output_file_slide), index=False)
 
     # Save patient-level aggregated results
     val_patient_agg['Split'] = 'validation'
     test_patient_agg['Split'] = 'test'
     all_results_patient = pd.concat([val_patient_agg, test_patient_agg],
                                    ignore_index=True)
-    base_path = os.path.join(os.getcwd(), "wgd_cls")
+    
     output_file_patient = os.path.join(base_path, f"wgd_predictions_{model_name}_lg_auc_optimized_patient_level.csv")
     all_results_patient.to_csv(output_file_patient, index=False)
 
