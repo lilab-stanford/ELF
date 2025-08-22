@@ -37,8 +37,8 @@ def save_hdf5(output_path, asset_dict, attr_dict= None, mode='a', chunk_size=32)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser('COBRA Feature Extraction')
-        # 模型参数
+    parser = argparse.ArgumentParser('ELF Feature Extraction')
+    
     parser.add_argument('--checkpoint', type=str, required=True,
                         help='path to pretrained model checkpoint')
     parser.add_argument('--dim', type=int, default=768,
@@ -110,7 +110,6 @@ def main_fp():
     save_dir = args.output_path
     os.makedirs(save_dir, exist_ok=True)
     
-    # 设置设备
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     
