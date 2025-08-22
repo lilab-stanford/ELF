@@ -34,7 +34,7 @@
 ## Step 3: Slide-level embedding extraction
 * Patch-level embedding extraction following Step 1.
 * Slide-level embedding extraction using `extract_multiple_model.sh` after setting the parameters successfully.
-* Evaluation on the downstream tasks, like the two examples in the `evaluation` folder. Please download and uncompress the slide embeddings of all comparison methods (Prov-GigaPath, CHIEF, TITAN and ELF) for evaluation, [ebrains](https://drive.google.com/file/d/1a38j_ABrHjO6uWNpgy0JakwvZbxxm7cI/view?usp=sharing) and [BRACS](https://drive.google.com/file/d/1YoCp02xr0FGfdsY58_JdNLcalFu17sfK/view?usp=sharing).
+* Evaluation on the downstream tasks, like the classification and regression examples in the `evaluation` folder. Please download and uncompress the slide embeddings of all comparison methods (Prov-GigaPath, CHIEF, TITAN and ELF) for evaluation, [evaluation](https://drive.google.com/drive/folders/1pvteAGR5y8UsTJ23VEPYrLSRRYpZsERh?usp=sharing).
 * More evaluation examples will be updated, please keep tuned.
 
 
