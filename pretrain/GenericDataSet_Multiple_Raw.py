@@ -39,13 +39,13 @@ class FeatDataset(Dataset):
         site_idx = self.site_dict[site]
         h5_path_patching = os.path.join(self.base_path.replace("features", "patching"), '{}.h5'.format(h5_path.replace("h5_files", "patches")))
 
-        # 从fm_list中随机选择指定数量的模型
+        # selected fms randomly
         if self.single_model:
             random_fm = np.random.choice(self.fm_list, size=2, replace=False)
             random_fm1 = random_fm[0]
             random_fm2 = random_fm[1]
             
-            # 读取特征
+            # load feat
             h5_path1 = os.path.join(self.base_path, random_fm1, '{}.h5'.format(h5_path))
             h5_path2 = os.path.join(self.base_path, random_fm2, '{}.h5'.format(h5_path))
             
@@ -128,13 +128,11 @@ class FeatDataset(Dataset):
             # if there are not enough features, reduce the size of unique parts
             available_for_unique = common_length - overlap_size
             if available_for_unique < 0:
-                # 极端情况：甚至没有足够的特征用于重叠部分
                 overlap_size = common_length // 3
                 unique_size = (common_length - overlap_size) // 2
             else:
                 unique_size = available_for_unique // 2
                 
-            # 重新计算重叠大小
             overlap_size = min(overlap_size, n - unique_size)
         
         # create a random permutation, for two models
