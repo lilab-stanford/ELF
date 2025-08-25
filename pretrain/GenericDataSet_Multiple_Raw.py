@@ -54,7 +54,7 @@ class FeatDataset(Dataset):
                 if random_fm1 == "virchow2":
                     if f1["features"][:].shape[1] < 1280:
                         print(f"Warning: {pat} has less than 1280 features in {random_fm1}")
-                    wsi_feat1 = torch.tensor(f1["features"][:])[:,:1280]
+                    wsi_feat1 = (torch.tensor(f1["features"][:])[:,:1280] + torch.tensor(f1["features"][:])[:,1280:]) / 2
                 else:
                     wsi_feat1 = torch.tensor(f1["features"][:])
                 lens1 = wsi_feat1.shape[1]
@@ -62,7 +62,7 @@ class FeatDataset(Dataset):
                 if random_fm2 == "virchow2":
                     if f2["features"][:].shape[1] < 1280:
                         print(f"Warning: {pat} has less than 1280 features in {random_fm2}")
-                    wsi_feat2 = torch.tensor(f2["features"][:])[:,:1280]
+                    wsi_feat2 = (torch.tensor(f2["features"][:])[:,:1280] + torch.tensor(f2["features"][:])[:,1280:]) / 2
                 else:
                     wsi_feat2 = torch.tensor(f2["features"][:])
                 lens2 = wsi_feat2.shape[1]
