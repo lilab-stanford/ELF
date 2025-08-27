@@ -14,3 +14,15 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+chief/
+titan/
+prov_gigapath/
+uni_elf/
+h0_elf/
+virchow2_elf/
+gigapath_elf/
+conch_v1_5_elf/
+*results/
+results*/
+wgd_cls/
+aneuploidy_reg/

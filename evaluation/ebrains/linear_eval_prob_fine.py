@@ -365,7 +365,6 @@ if __name__ == "__main__":
     all_bootstrap_results = []
     
     for model in models_to_compare:
-        print(f"\nEvaluating {model}")
         results, bootstrap_res = main(model_name=model)
         all_results.append(results)
         all_bootstrap_results.append(bootstrap_res)

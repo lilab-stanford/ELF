@@ -252,34 +252,34 @@ def evaluate_ebrains(train_data, val_data, test_data, max_iter=2000,
         print(f"Bootstrap results saved to "
               f"{os.path.join(output_dir, bootstrap_file)}")
         
-        # Save confusion matrix as an image
-        plt.figure(figsize=(10, 8))
-        cm = metrics['confusion_matrix']
+        # # Save confusion matrix as an image
+        # plt.figure(figsize=(10, 8))
+        # cm = metrics['confusion_matrix']
         
-        # Convert class indices to class names for better visualization
-        class_names = [k for k, v in sorted(ebrains_label_dict.items(),
-                                           key=lambda item: item[1])]
+        # # Convert class indices to class names for better visualization
+        # class_names = [k for k, v in sorted(ebrains_label_dict.items(),
+        #                                    key=lambda item: item[1])]
         
-        # Normalize confusion matrix
-        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        # # Normalize confusion matrix
+        # cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         
-        # Plot confusion matrix
-        sns.heatmap(cm_normalized, annot=True, fmt='.2f', cmap='Blues',
-                    xticklabels=class_names, yticklabels=class_names)
-        plt.title(f'Normalized Confusion Matrix - {model_name}')
-        plt.ylabel('True Label')
-        plt.xlabel('Predicted Label')
-        plt.xticks(rotation=90)
-        plt.yticks(rotation=0)
-        plt.tight_layout()
+        # # Plot confusion matrix
+        # sns.heatmap(cm_normalized, annot=True, fmt='.2f', cmap='Blues',
+        #             xticklabels=class_names, yticklabels=class_names)
+        # plt.title(f'Normalized Confusion Matrix - {model_name}')
+        # plt.ylabel('True Label')
+        # plt.xlabel('Predicted Label')
+        # plt.xticks(rotation=90)
+        # plt.yticks(rotation=0)
+        # plt.tight_layout()
         
-        # Save confusion matrix
-        confusion_file = f"confusion_matrix_{model_name if model_name else 'model'}.png"
-        plt.savefig(os.path.join(output_dir, confusion_file), dpi=300,
-                   bbox_inches='tight')
-        plt.close()
-        print(f"Confusion matrix saved to "
-              f"{os.path.join(output_dir, confusion_file)}")
+        # # Save confusion matrix
+        # confusion_file = f"confusion_matrix_{model_name if model_name else 'model'}.png"
+        # plt.savefig(os.path.join(output_dir, confusion_file), dpi=300,
+        #            bbox_inches='tight')
+        # plt.close()
+        # print(f"Confusion matrix saved to "
+        #       f"{os.path.join(output_dir, confusion_file)}")
 
     return metrics, (mean_metrics, std_metrics, all_bootstrap_scores)
 
@@ -370,7 +370,6 @@ if __name__ == "__main__":
     all_bootstrap_results = []
     
     for model in models_to_compare:
-        print(f"\nEvaluating {model}")
         results, bootstrap_res = main(model_name=model)
         all_results.append(results)
         all_bootstrap_results.append(bootstrap_res)
