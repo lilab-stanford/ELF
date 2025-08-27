@@ -77,12 +77,6 @@ class ABMILEmbedding(nn.Module):
             all_resized_x = []
             for i in range(len(x)):
                 sample_x = x[i, :, :lens[i].item()].unsqueeze(0)
-                # The following step is absolutely critical—please do not change it. 
-                # Using a learnable MLP for projection will severely degrade performance and ruin pretraining.
-                # I’ve tested this extensively. An alternative is random projection rather than a learned one 
-                # (see Figure 5 in https://arxiv.org/pdf/2104.02057), The results are not hugely different. You can try it.
-                # Trust me on this—don’t waste your time using learnable projection. 
-                # I only got this after spending over one week on an 8 NVIDIA H100 GPUs cluster, so sad.
                 resized_x = F.interpolate(sample_x, size=768, mode='linear', align_corners=True) 
                 resized_x = resized_x.squeeze(0)
                 all_resized_x.append(resized_x)
