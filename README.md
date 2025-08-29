@@ -25,7 +25,7 @@
 
 
 ## Step 1: Patch-level embedding extraction
-* Extracting patch-level embedding using [CLAM](https://github.com/mahmoodlab/CLAM) and five tile-level foundation models ([UNI](https://huggingface.co/MahmoodLab/UNI), [CONCHV1.5](https://huggingface.co/MahmoodLab/conchv1_5), [Gigapath](https://huggingface.co/prov-gigapath/prov-gigapath), [Virchow2](https://huggingface.co/paige-ai/Virchow2), [H-optimus-0](https://huggingface.co/bioptimus/H-optimus-0)) in 10X.  
+* Extracting patch-level embedding using [CLAM](https://github.com/mahmoodlab/CLAM) and five tile-level foundation models ([UNI](https://huggingface.co/MahmoodLab/UNI), [CONCHV1.5](https://huggingface.co/MahmoodLab/conchv1_5), [Gigapath](https://huggingface.co/prov-gigapath/prov-gigapath), [Virchow2](https://huggingface.co/paige-ai/Virchow2), [H-optimus-0](https://huggingface.co/bioptimus/H-optimus-0)) in 10X (Extracted EBRAINS features for the tutorial are [here](https://drive.google.com/file/d/16tpUS-o21WsQH1U3Jyqi4784sb-OceiB/view?usp=sharing)).  
 
 ## Step 2: Slide encoder pretrain 
 * Start training slide encoder using `sh bash_multiple.sh`, at least 8 x NVIDIA H100 needed. Logs and checkpoints will be saved to the default path.
