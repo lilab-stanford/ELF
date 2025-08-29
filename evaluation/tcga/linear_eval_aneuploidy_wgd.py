@@ -295,15 +295,16 @@ def main():
     args = parser.parse_args()
 
     # Single model evaluation
-    for model_name in ["titan", "chief", "prov_gigapath"]:
-        results = run_single_model_evaluation(
-            model_name,
-            max_iter=args.max_iter
-        )
+    # for model_name in ["titan", "chief", "prov_gigapath"]:
+    # for model_name in ["uni_elf", "virchow2_elf", "conch_v1_5_elf", "h0_elf", "gigapath_elf"]:
+    #     results = run_single_model_evaluation(
+    #         model_name,
+    #         max_iter=args.max_iter
+    #     )
 
     # Ensemble model evaluation
     results = run_ensemble_evaluation(
-        model_names=["uni_elf", "virchow2_elf", "conch_v1_5_elf", "h0_elf", "gigapath_elf"],
+        model_names=["uni_elf", "conch_v1_5_elf", "gigapath_elf"],
         max_iter=args.max_iter)
 
     print("\n===== Evaluation Complete =====")
