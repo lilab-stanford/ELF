@@ -159,7 +159,7 @@ def main_worker(gpu, ngpus_per_node, args):
     model = model.to(device)
     if args.bf16:
         model = model.to(torch.bfloat16)
-    model = DDP(model, device_ids=[args.rank], find_unused_parameters=True)
+    model = DDP(model, device_ids=[args.rank], find_unused_parameters=False)
     
     optimizer = torch.optim.AdamW(model.parameters(), args.lr, weight_decay=args.weight_decay)
     

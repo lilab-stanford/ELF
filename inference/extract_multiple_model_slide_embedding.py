@@ -1,34 +1,43 @@
-import torch
-import glob
-import os
-import torch.nn as nn
-import sys
-import os
-# Add the ELF directory to the Python path for direct script execution
-elf_dir = os.path.join(os.path.dirname(__file__), '..')
-sys.path.insert(0, elf_dir)
-from pretrain.mocov3_multiple_model import MoCo
-import argparse
-from pathlib import Path
-from tqdm import tqdm
-import numpy as np
-import h5py
-import pandas as pd
+"""Extract ELF slide embeddings from tile-level foundation-model h5 files.
 
-def save_hdf5(output_path, asset_dict, attr_dict= None, mode='a', chunk_size=32):
+Uses interpolate → LayerNorm → 8-head ABMIL (the trained inference graph).
+Does not load the training MoCo modules.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+import h5py
+import numpy as np
+import torch
+from tqdm import tqdm
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from model import load_encoder, preprocess_patch_features
+
+VALID_FMS = ("uni", "gigapath", "h0", "virchow2", "conch_v1_5")
+
+
+def save_hdf5(output_path, asset_dict, attr_dict=None, mode="w", chunk_size=32):
+    output_path = str(output_path)
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     with h5py.File(output_path, mode) as file:
         for key, val in asset_dict.items():
+            val = np.asarray(val)
             data_shape = val.shape
             if key not in file:
-                data_type = val.dtype
-                chunk_shape = (chunk_size, ) + data_shape[1:]
-                maxshape = (None, ) + data_shape[1:]
-                dset = file.create_dataset(key, shape=data_shape, maxshape=maxshape, chunks=chunk_shape, dtype=data_type)
+                chunk_shape = (min(chunk_size, data_shape[0]),) + data_shape[1:]
+                dset = file.create_dataset(
+                    key, shape=data_shape, maxshape=(None,) + data_shape[1:],
+                    chunks=chunk_shape, dtype=val.dtype,
+                )
                 dset[:] = val
-                if attr_dict is not None:
-                    if key in attr_dict.keys():
-                        for attr_key, attr_val in attr_dict[key].items():
-                            dset.attrs[attr_key] = attr_val
+                if attr_dict is not None and key in attr_dict:
+                    for attr_key, attr_val in attr_dict[key].items():
+                        dset.attrs[attr_key] = attr_val
             else:
                 dset = file[key]
                 dset.resize(len(dset) + data_shape[0], axis=0)
@@ -36,119 +45,161 @@ def save_hdf5(output_path, asset_dict, attr_dict= None, mode='a', chunk_size=32)
     return output_path
 
 
+def load_patch_features(h5_path: Path, foundation_model: str | None) -> np.ndarray:
+    with h5py.File(h5_path, "r") as handle:
+        if "features" not in handle:
+            raise KeyError(f"{h5_path} has no dataset 'features'")
+        features = handle["features"][:]
+    if features.ndim == 3 and features.shape[0] == 1:
+        features = features[0]
+    if features.ndim != 2:
+        raise ValueError(f"{h5_path}: expected [N, C] features, got {features.shape}")
+    tensor = preprocess_patch_features(torch.from_numpy(features), foundation_model)
+    return tensor.numpy()
+
+
+@torch.inference_mode()
+def encode_slide(model, features: np.ndarray, device: torch.device):
+    x = torch.from_numpy(np.asarray(features, dtype=np.float32)).to(device)
+    if x.ndim != 2:
+        raise ValueError(f"expected [N, C], got {tuple(x.shape)}")
+    x = x.unsqueeze(0)
+    lens = torch.tensor([x.shape[-1]], device=device)
+    features_dim, features_768, attention = model(x, lens=lens)
+    return (
+        features_dim.detach().float().cpu().numpy(),
+        features_768.detach().float().cpu().numpy(),
+        attention.detach().float().cpu().numpy(),
+    )
+
+
+elf_dir = Path(__file__).resolve().parents[1]
+
+
 def parse_args():
-    parser = argparse.ArgumentParser('ELF Feature Extraction')
-    
-    parser.add_argument('--checkpoint', type=str, required=True,
-                        help='path to pretrained model checkpoint')
-    parser.add_argument('--dim', type=int, default=768,
-                        help='base feature dimension')
-    parser.add_argument('--l-dim', type=int, default=768,
-                        help='output feature dimension')
-    parser.add_argument('--nr-heads', type=int, default=8,
-                        help='number of attention heads')
-    parser.add_argument('--nr-layers', type=int, default=6,
-                        help='number of transformer layers')
-    
-    # data parameters
-    parser.add_argument('--dataset', type=str, default="None",
-                        help='base path for input features')
-    parser.add_argument('--csv-path', type=str, default="None",
-                        help='path to csv file')
-    parser.add_argument('--output-path', type=str, default="None",
-                        help='path to save extracted features')
-    parser.add_argument('--num-feats', type=int, default=1024,
-                        help='number of features per sample')
-    parser.add_argument('--feat-len', type=int, default=1536,
-                        help='feature length')
-    # parser.add_argument('--feature-models', nargs='+', 
-    #                     default=["uni", "gigapath", "h0", "virchow2", "conch_v1_5", "phikon_v2"])
-    parser.add_argument('--feature-models', nargs='+', 
-                        default=["conch_v1_5"])
-    
-    # running parameters
-    parser.add_argument('--batch-size', type=int, default=32)
-    parser.add_argument('--num-workers', type=int, default=4)
-    parser.add_argument('--gpu', type=int, default=0)
-    
+    parser = argparse.ArgumentParser("ELF Feature Extraction")
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=str(elf_dir / "checkpoints" / "elf_slide_encoder.pth"),
+        help="inference weights (elf_slide_encoder.pth)",
+    )
+    parser.add_argument(
+        "--input-dir",
+        type=str,
+        default=None,
+        help="directory of tile-feature h5 files (dataset 'features')",
+    )
+    parser.add_argument(
+        "--feature-root",
+        type=str,
+        default=None,
+        help="parent of <fm>/<dataset>/h5_files; used with --dataset and --feature-models",
+    )
+    parser.add_argument("--dataset", type=str, default=None)
+    parser.add_argument(
+        "--feature-models",
+        nargs="+",
+        default=None,
+        help="one or more of: " + " ".join(VALID_FMS),
+    )
+    parser.add_argument(
+        "--output-path",
+        type=str,
+        default=None,
+        help="output directory for a single foundation model",
+    )
+    parser.add_argument(
+        "--output-root",
+        type=str,
+        default=None,
+        help="writes <output-root>/<fm>_elf when extracting several models",
+    )
+    parser.add_argument("--gpu", type=int, default=0)
+    parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
-def load_model(args, device):
-    # create model
-    model = MoCo(
-        c_dim=args.l_dim,
-        embed_dim=args.dim,
-        num_heads=args.nr_heads,
-        nr_mamba_layers=args.nr_layers,
-        T=0.2,
-        dropout=0.25
-    )
-    
-    # load checkpoint, set weights_only=False to handle numpy arrays
-    checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=False)
-    if 'state_dict' in checkpoint:
-        state_dict = checkpoint['state_dict']
-    else:
-        state_dict = checkpoint
-    
-    # handle the prefix of state dict
-    if all(k.startswith('module.') for k in state_dict.keys()):
-        state_dict = {k[7:]: v for k, v in state_dict.items()}  # remove "module." prefix
-    
-    # load weights
-    model.load_state_dict(state_dict, strict=False)
-    model = model.to(device)
-    model.eval()
-    
-    return model
 
+def resolve_jobs(args):
+    fms = list(args.feature_models or [])
+    jobs = []
 
+    if args.input_dir:
+        if len(fms) > 1:
+            raise ValueError("--input-dir extracts one foundation model; pass a single --feature-models")
+        fm = fms[0] if fms else None
+        if fm is None and "virchow2" in Path(args.input_dir).as_posix().lower():
+            fm = "virchow2"
+        out = args.output_path or args.output_root
+        if not out:
+            raise ValueError("specify --output-path")
+        jobs.append((fm, Path(args.input_dir), Path(out)))
+        return jobs
 
-def main_fp():
-    args = parse_args()
-    dataset = args.dataset
-    save_dir = args.output_path
-    os.makedirs(save_dir, exist_ok=True)
-    
-    device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
-    
-    # load model
-    model = load_model(args, device)
-    print("Model loaded successfully")
+    if not args.feature_root or not args.dataset:
+        raise ValueError("specify --input-dir, or --feature-root and --dataset")
+    if not fms:
+        raise ValueError("specify --feature-models")
 
-    fm_list = args.feature_models
-    
-    all_patients = os.listdir("/mnt/radonc-li02/private/luoxd96/omnipath/features/{}/{}/h5_files".format(fm_list[0], dataset))
-
-    for patient in tqdm(all_patients):
-        if os.path.exists("{}/{}".format(save_dir, patient)):
-            print("{} already exists".format(patient))
-            continue
+    root = Path(args.feature_root)
+    for fm in fms:
+        if fm not in VALID_FMS:
+            raise ValueError(f"unknown foundation model {fm!r}; expected one of {VALID_FMS}")
+        input_dir = root / fm / args.dataset / "h5_files"
+        if args.output_path and len(fms) == 1:
+            output_dir = Path(args.output_path)
         else:
-            all_features = []
-            all_lengths = []
-            for fm in fm_list:
-                h5py_file = h5py.File("/mnt/radonc-li02/private/luoxd96/omnipath/features/{}/{}/h5_files/{}".format(fm, dataset, patient), "r")
-                if fm == "virchow2":
-                    features = (h5py_file["features"][:][:, :1280] + h5py_file["features"][:][:, 1280:]) / 2
-                else:
-                    features = h5py_file["features"][:]
-                all_features.append(features)
-                all_lengths.append(features.shape[1])
-            all_features = np.array(all_features)
-            
-            features = torch.from_numpy(all_features).float().to(device) 
-            lengths = torch.tensor(all_lengths).to(device)
-            
-            with torch.no_grad():
-                slide_embedding_raw, slide_embedding, attention_weights = model.momentum_enc(features, lens=lengths, infer=True)
-                # slide_embedding_raw, slide_embedding, attention_weights = model.base_enc(features, lens=lengths, infer=True)
-                slide_embedding_raw = slide_embedding_raw.detach().to(torch.float32).cpu().numpy()
-                slide_embedding = slide_embedding.detach().to(torch.float32).cpu().numpy()
-                attention_weights = attention_weights.detach().to(torch.float32).cpu().numpy()
-                save_hdf5("{}/{}".format(save_dir, patient), {'features_dim': slide_embedding_raw, 'features': slide_embedding, 'attention_weights': attention_weights})
-                print("{} saved".format(patient))
-            
-if __name__ == '__main__':
-    main_fp()
+            output_root = Path(args.output_root or args.output_path or ".")
+            output_dir = output_root / f"{fm}_elf"
+        jobs.append((fm, input_dir, output_dir))
+    return jobs
+
+
+def extract_one(model, device, fm, input_dir: Path, output_dir: Path, overwrite: bool):
+    if not input_dir.is_dir():
+        raise FileNotFoundError(f"missing input dir: {input_dir}")
+    slides = sorted(p for p in input_dir.iterdir() if p.suffix == ".h5")
+    if not slides:
+        raise FileNotFoundError(f"no .h5 files in {input_dir}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Using device: {device}")
+    print(f"fm={fm}  n={len(slides)}  {input_dir} -> {output_dir}")
+    for h5_path in tqdm(slides, desc=f"ELF {fm or 'unknown'}"):
+        out_path = output_dir / h5_path.name
+        if out_path.exists() and not overwrite:
+            print(f"{h5_path.name} already exists")
+            continue
+        patches = load_patch_features(h5_path, fm)
+        features_dim, features_768, attention = encode_slide(model, patches, device)
+        save_hdf5(
+            out_path,
+            {
+                "features_dim": features_dim,
+                "features": features_768,
+                "attention_weights": attention,
+            },
+        )
+
+
+def main():
+    args = parse_args()
+
+    if torch.cuda.is_available() and args.gpu >= 0:
+        device = torch.device(f"cuda:{args.gpu}")
+    else:
+        device = torch.device("cpu")
+
+    ckpt = Path(args.checkpoint)
+    if not ckpt.is_file():
+        raise FileNotFoundError(f"checkpoint not found: {args.checkpoint}")
+
+    jobs = resolve_jobs(args)
+    model = load_encoder(ckpt, device=device)
+    print("Model loaded successfully")
+    print(f"device={device}  checkpoint={ckpt}")
+    for fm, input_dir, output_dir in jobs:
+        extract_one(model, device, fm, input_dir, output_dir, args.overwrite)
+
+
+if __name__ == "__main__":
+    main()

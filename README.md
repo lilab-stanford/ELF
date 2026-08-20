@@ -10,7 +10,7 @@
 - NVIDIA GPU (Pretrained on NVIDIA H100 x8 and tested on NVIDIA L40S x8) with CUDA 12.4 (Ubuntu server).
 
 **Software:**
-- Python (3.10.12), PyTorch (PyTorc2.6)
+- Python (3.10.12), PyTorch (PyTorch 2.6), conda env `py310`
 
 **Additional Packages/Libraries:**
 * CLAM (https://github.com/mahmoodlab/CLAM)
@@ -29,11 +29,26 @@
 
 ## Step 2: Slide encoder pretrain 
 * Start training slide encoder using `sh bash_multiple.sh`, at least 8 x NVIDIA H100 needed. Logs and checkpoints will be saved to the default path.
-* The pretrained model will be downloaded at [here](https://drive.google.com/file/d/1eotBSohYE9vy71a-LiNxI3ZP4reUN44L/view?usp=sharing).
+* Pretrained inference weights: [huggingface.co/luoxd96/ELF](https://huggingface.co/luoxd96/ELF).
 
 ## Step 3: Slide-level embedding extraction
 * Patch-level embedding extraction following Step 1.
+* The trained slide encoder is interpolate → LayerNorm → 8-head ABMIL (not the training `MoCo` class).
 * Slide-level embedding extraction using `extract_multiple_model.sh` after setting the parameters successfully.
+
+```bash
+# download elf_slide_encoder.pth from https://huggingface.co/luoxd96/ELF
+python inference/extract_multiple_model_slide_embedding.py \
+  --checkpoint checkpoints/elf_slide_encoder.pth \
+  --input-dir /path/to/<fm>/<dataset>/h5_files \
+  --output-path /path/to/<fm>_elf \
+  --feature-models uni \
+  --gpu 0
+
+FEATURE_ROOT=/path/to/features DATASET=ebrains bash inference/extract_multiple_model.sh
+```
+
+`--feature-models` is one of `uni`, `conch_v1_5`, `gigapath`, `virchow2`, `h0`. Repeat per foundation model; concatenate `features_dim` for the paper ensemble.
 
 ## Step 4: Evaluation on classification and regression tasks
 
@@ -49,5 +64,16 @@ This code is made available under the GPLv3 License and is available for non-com
 ## Citation
 If you find our work useful in your research, please consider citing:
 
+```bibtex
+@misc{luo2026ensemblelearningpathologyfoundation,
+  title={Ensemble learning of pathology foundation models for precision oncology},
+  author={Xiangde Luo and Xiyue Wang and Feyisope Eweje and Xiaoming Zhang and Juan Luis Gomez Marti and Sarah Cascarino and Sen Yang and Yuchen Li and Ryan Quinton and Jinxi Xiang and Yuanfeng Ji and Zhe Li and Yijiang Chen and Colin Bergstrom and Ted Kim and Francesca Maria Olguin and Kelley Yuan and Matthew Abikenari and Andrew Heider and Sierra Willens and Sanjeeth Rajaram and Robert West and Joel Neal and Adam Schoenfeld and Maximilian Diehn and Chad Vanderbilt and Ruijiang Li},
+  year={2026},
+  eprint={2508.16085},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2508.16085},
+}
+```
 
 

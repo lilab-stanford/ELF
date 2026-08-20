@@ -14,14 +14,21 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# comparison slide encoders
 chief/
 titan/
 prov_gigapath/
-uni_elf/
-h0_elf/
-virchow2_elf/
-gigapath_elf/
-conch_v1_5_elf/
+
+# extracted ELF slide embeddings (never upload)
+*.h5
+*_elf/
+extract_logs/
+
+# local checkpoints and Hugging Face staging (weights/card go to Hub, not GitHub)
+checkpoints/
+huggingface/
+
 *results/
 results*/
 wgd_cls/
